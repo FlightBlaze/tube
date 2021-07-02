@@ -5,7 +5,7 @@
 using namespace tube;
 
 void Tube::extrude(std::vector<glm::vec3> verts, bool shapeClosed) {
-	this->vertices.insert(this->vertices.begin() + this->vertices.size(), verts.begin(), verts.end());
+	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
 
 	if (mIsFirst) {
 		mIsFirst = false;
@@ -56,7 +56,7 @@ void Tube::connectStartWithEnd(int shapeNumVertices) {
 	}
 }
 
-Tube::Tube(Path& path, std::vector<glm::vec3> shape, bool shapeClosed, TubeCaps caps, TubeJoin) {
+Tube::Tube(Path& path, Shape& shape, TubeCaps caps) {
 	for (size_t i = 0; i < path.points.size(); i++) {
 		bool isStart = i == 0;
 		bool isEnd = i == path.points.size() - 1;
@@ -81,14 +81,25 @@ Tube::Tube(Path& path, std::vector<glm::vec3> shape, bool shapeClosed, TubeCaps 
 			glm::rotate(identity, curPoint.tilt, up) *
 			glm::scale(identity, glm::vec3(curPoint.radius));
 
-		auto transformedShape = std::vector<glm::vec3>(shape.size());
-		for (int p = 0; p < shape.size(); p++)
-			transformedShape[p] = shapeMat * glm::vec4(shape[p], 1.0f);
+		auto transformedShape = std::vector<glm::vec3>(shape.verts.size());
+		for (int p = 0; p < shape.verts.size(); p++)
+			transformedShape[p] = shapeMat * glm::vec4(shape.verts[p], 1.0f);
 
-		extrude(transformedShape, shapeClosed);
+		extrude(transformedShape, shape.closed);
 
 		if (path.closed)
-			connectStartWithEnd((int)shape.size());
+			connectStartWithEnd((int)shape.verts.size());
+	}
+}
+
+Tube::Tube(std::vector<Tube> tubes) {
+	size_t indicesEnd = 0;
+	for (auto tube : tubes) {
+		this->vertices.insert(this->vertices.end(), tube.vertices.begin(), tube.vertices.end());
+		this->indices.resize(this->indices.size() + tube.indices.size());
+		for (size_t i = 0; i < tube.indices.size(); i++)
+			this->indices[indicesEnd + i] = (int)indicesEnd + tube.indices[i];
+		indicesEnd += tube.indices.size();
 	}
 }
 
@@ -103,16 +114,27 @@ std::vector<float> Tube::toXYZ() {
 	return attribs;
 }
 
-std::vector<glm::vec3> TubeShapes::circle(float radius, int segments)
+Tube Tube::join(Tube a, Tube& b) {
+	size_t indicesEnd = a.indices.size();
+	a.vertices.insert(a.vertices.end(), b.vertices.begin(), b.vertices.end());
+	a.indices.resize(a.indices.size() + b.indices.size());
+	for (size_t i = 0; i < b.indices.size(); i++)
+		a.indices[indicesEnd + i] = (int)indicesEnd + b.indices[i];
+	return a;
+}
+
+Shape Shapes::circle(float radius, int segments)
 {
-	auto shape = std::vector<glm::vec3>(segments);
+	auto shape = Shape();
+	shape.closed = true;
+	shape.verts = std::vector<glm::vec3>(segments);
 	float angle = 0.0f;
 	float arcLength = 360.0f;
 	for (int i = 0; i < segments; i++) {
 		float x = sin(glm::radians(angle)) * radius;
 		float y = cos(glm::radians(angle)) * radius;
 
-		shape[i] = glm::vec3(x, y, 0.0f);
+		shape.verts[i] = glm::vec3(x, y, 0.0f);
 
 		angle += (arcLength / segments);
 	}

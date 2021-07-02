@@ -8,7 +8,7 @@ set(
     "include/Tube.h"
     "include/Path.h"
     "source/Tube.cpp"
-    "source/Path.cpp")
+    "source/Path.cpp" "source/Bezier.cpp" "include/Bezier.h")
 
 set(
     GLM_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../glm/" )

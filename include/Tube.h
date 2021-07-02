@@ -8,17 +8,7 @@ namespace tube {
 
 enum class TubeCaps {
 	NONE,
-	FILL,
-	ROUNDED,
-	SQUARE,
-	CLOSED
-};
-
-enum class TubeJoin {
-	CONNECT,
-	BEVEL,
-	ROUND,
-	MITER
+	FILL
 };
 
 class Tube {
@@ -31,14 +21,21 @@ public:
 	std::vector<glm::vec3> vertices;
 	std::vector<int> indices;
 
-	Tube(Path& path, std::vector<glm::vec3> shape, bool shapeClosed = true, TubeCaps caps = TubeCaps::NONE, TubeJoin = TubeJoin::CONNECT);
+	Tube(Path& path, Shape& shape, TubeCaps caps = TubeCaps::NONE);
+	Tube(std::vector<Tube> tubes);
 
+	// To positions and texture coordinates
+	std::vector<float> toXYZUV();
+
+	// To positions
 	std::vector<float> toXYZ();
+
+	static Tube join(Tube a, Tube& b);
 };
 
-class TubeShapes {
+class Shapes {
 public:
-	static std::vector<glm::vec3> circle(float radius, int segments = 32);
+	static Shape circle(float radius, int segments = 32);
 };
 
 }
