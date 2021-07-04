@@ -81,16 +81,17 @@ Tube::Tube(Path path, Shape& shape, TubeCaps caps) {
 		glm::mat4 identity = glm::mat4(1.0f);
 		glm::vec3 up = glm::vec3(0, 0, 1);
 		glm::mat4 shapeMat = glm::translate(identity, curPoint.pos) *
-			glm::rotate(identity, glm::radians(90.0f), glm::vec3(1, 0, 0)) *
+			// glm::rotate(identity, glm::radians(90.0f), glm::vec3(1, 0, 0)) *
 			// glm::lookAt(glm::vec3(0.0f), meanDir, up) *
-			glm::rotate(identity, curPoint.tilt, up) *
+			// glm::rotate(identity, curPoint.tilt, up) *
 			glm::scale(identity, glm::vec3(curPoint.radius));
 
-		glm::quat shapeRot = glm::quat();//glm::quatLookAt(meanDir, up);
+		glm::quat shapeTilt = glm::quat(glm::vec3(0, 0, curPoint.tilt));
+		glm::quat shapeLookAt = glm::quatLookAt(meanDir, up);
 
 		auto transformedShape = std::vector<glm::vec3>(shape.verts.size());
 		for (int p = 0; p < shape.verts.size(); p++)
-			transformedShape[p] = shapeMat * (shapeRot * glm::vec4(shape.verts[p], 1.0f));
+			transformedShape[p] = shapeMat * (shapeLookAt * shapeTilt * glm::vec4(shape.verts[p], 1.0f));
 
 		extrude(transformedShape, shape.closed);
 
