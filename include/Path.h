@@ -5,6 +5,8 @@
 
 namespace tube {
 
+struct ThreePoints;
+
 struct Point {
 	glm::vec3 pos;
 	glm::vec3 rightHandlePos = glm::vec3(0.0f);
@@ -17,9 +19,13 @@ struct Point {
 	Point();
 	Point(glm::vec3 pos);
 
-	static std::vector<Point> divide(Point start, Point end, float t);
+	static ThreePoints divide(Point start, Point end, float t);
 	static std::vector<glm::vec3> toVectors(Point start, Point end, int segments = 32);
 	static std::vector<Point> toPoly(Point start, Point end, int segments = 32);
+};
+
+struct ThreePoints {
+	Point A, B, C;
 };
 
 struct TwoPathes;
@@ -39,6 +45,7 @@ struct Path {
 	Path withRoundedCaps(float radius);
 	Path withSquareCaps(float radius);
 	Path taper();
+	Path copy();
 	Path toPoly(int segmentsPerCurve = 32);
 	Shape toShape(int segmentsPerCurve = 32);
 };
@@ -60,9 +67,13 @@ struct Builder {
 	Builder(std::vector<Path> pathes, Shape shape);
 	Builder(std::vector<Path> pathes);
 	Builder(Path path);
+	Builder(Shape shape);
 
 	Builder withShape(Shape s);
 	Builder withRoundedCaps(float radius);
+	Builder withSquareCaps(float radius);
+	Builder toPoly();
+	Builder copy();
 	Tube apply();
 };
 
