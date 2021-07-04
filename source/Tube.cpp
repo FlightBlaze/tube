@@ -1,6 +1,7 @@
 #include "Tube.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 using namespace tube;
 
@@ -56,7 +57,10 @@ void Tube::connectStartWithEnd(int shapeNumVertices) {
 	}
 }
 
-Tube::Tube(Path& path, Shape& shape, TubeCaps caps) {
+Tube::Tube(Path path, Shape& shape, TubeCaps caps) {
+	if (path.hasNonPoly())
+		path = path.toPoly();
+
 	for (size_t i = 0; i < path.points.size(); i++) {
 		bool isStart = i == 0;
 		bool isEnd = i == path.points.size() - 1;
@@ -79,12 +83,14 @@ Tube::Tube(Path& path, Shape& shape, TubeCaps caps) {
 		glm::mat4 shapeMat = glm::translate(identity, curPoint.pos) *
 			glm::rotate(identity, glm::radians(90.0f), glm::vec3(1, 0, 0)) *
 			// glm::lookAt(glm::vec3(0.0f), meanDir, up) *
-			// glm::rotate(identity, curPoint.tilt, up) *
+			glm::rotate(identity, curPoint.tilt, up) *
 			glm::scale(identity, glm::vec3(curPoint.radius));
+
+		glm::quat shapeRot = glm::quat();//glm::quatLookAt(meanDir, up);
 
 		auto transformedShape = std::vector<glm::vec3>(shape.verts.size());
 		for (int p = 0; p < shape.verts.size(); p++)
-			transformedShape[p] = shapeMat * glm::vec4(shape.verts[p], 1.0f);
+			transformedShape[p] = shapeMat * (shapeRot * glm::vec4(shape.verts[p], 1.0f));
 
 		extrude(transformedShape, shape.closed);
 

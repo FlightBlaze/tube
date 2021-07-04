@@ -21,7 +21,7 @@ public:
 	std::vector<glm::vec3> vertices;
 	std::vector<int> indices;
 
-	Tube(Path& path, Shape& shape, TubeCaps caps = TubeCaps::NONE);
+	Tube(Path path, Shape& shape, TubeCaps caps = TubeCaps::NONE);
 	Tube(std::vector<Tube> tubes);
 
 	// To positions and texture coordinates

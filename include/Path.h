@@ -36,6 +36,8 @@ struct Path {
 	std::vector<Point> points;
 	bool closed = false;
 
+	bool hasNonPoly();
+
 	TwoPathes divide(float t);
 	Path slice(float start, float end);
 	std::vector<Path> dash(float step);

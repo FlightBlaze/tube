@@ -140,6 +140,14 @@ std::vector<Point> Point::toPoly(Point start, Point end, int segments) {
 	return points;
 }
 
+bool tube::Path::hasNonPoly() {
+    for (auto point : points) {
+        if (point.hasLeftHandle || point.hasRightHandle)
+            return true;
+    }
+    return false;
+}
+
 TwoPathes tube::Path::divide(float t)
 {
 	return TwoPathes();
@@ -166,11 +174,13 @@ Path tube::Path::withRoundedCaps(float radius) {
 
     glm::vec3 startDir = glm::normalize(startDivided.A.pos - startDivided.B.pos);
     float startRadius = this->points[0].radius;
+    float startTilt = this->points[0].tilt;
     std::vector<Point> start(segments);
     for (int i = 0; i < start.size(); i++) {
         float r = straightToRound(((float)segments - (float)i - 1.0f) / (float)segments);
         start[i].pos = this->points[0].pos - startDir * (radius / (float)segments * (float)i) + startDir * radius;
         start[i].radius = startRadius * r;
+        start[i].tilt = startTilt;
         // std::cout << start[i].radius << std::endl;
     }
 
@@ -182,11 +192,13 @@ Path tube::Path::withRoundedCaps(float radius) {
 
     glm::vec3 endDir = glm::normalize(endDivided.A.pos - endDivided.B.pos);
     float endRadius = this->points.back().radius;
+    float endTilt = this->points.back().tilt;
     std::vector<Point> end(segments);
     for (int i = 0; i < end.size(); i++) {
         float r = straightToRound((float)i / (float)segments);
         end[i].pos = this->points.back().pos + endDir * (radius / (float)segments * ((float)i + 1.0f));
         end[i].radius = endRadius * r;
+        end[i].tilt = endTilt;
     }
 
     Path path = this->copy();
@@ -203,9 +215,11 @@ Path tube::Path::withSquareCaps(float radius) {
 
     glm::vec3 startDir = glm::normalize(startDivided.A.pos - startDivided.B.pos);
     float startRadius = this->points[0].radius;
+    float startTilt = this->points[0].tilt;
     Point start;
     start.pos = this->points[0].pos + startDir * radius;
     start.radius = startRadius;
+    start.tilt = startTilt;
 
     // Last curve divided at the end
     auto endDivided = Point::divide(
@@ -215,9 +229,11 @@ Path tube::Path::withSquareCaps(float radius) {
 
     glm::vec3 endDir = glm::normalize(endDivided.A.pos - endDivided.B.pos);
     float endRadius = this->points.back().radius;
+    float endTilt = this->points.back().tilt;
     Point end;
     end.pos = this->points.back().pos + endDir * radius;
     end.radius = endRadius;
+    end.tilt = endTilt;
 
     Path path = this->copy();
     path.points[0].hasLeftHandle = false;
