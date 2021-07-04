@@ -166,9 +166,7 @@ float straightToRound(float t) {
     return sqrt(1 - t * t);
 }
 
-Path tube::Path::withRoundedCaps(float radius) {
-    int segments = 16;
-
+Path tube::Path::withRoundedCaps(float radius, int segments) {
     // First curve divided at the beginning
     auto startDivided = Point::divide(this->points[0], this->points[1], 0.1f);
 
@@ -177,8 +175,9 @@ Path tube::Path::withRoundedCaps(float radius) {
     float startTilt = this->points[0].tilt;
     std::vector<Point> start(segments);
     for (int i = 0; i < start.size(); i++) {
-        float r = straightToRound(((float)segments - (float)i - 1.0f) / (float)segments);
-        start[i].pos = this->points[0].pos - startDir * (radius / (float)segments * (float)i) + startDir * radius;
+        float t = ((float)segments - (float)i) / ((float)segments + 1.0f);
+        float r = 1.0f - t;
+        start[i].pos = this->points[0].pos + startDir * radius * straightToRound(r);
         start[i].radius = startRadius * r;
         start[i].tilt = startTilt;
         // std::cout << start[i].radius << std::endl;
@@ -195,9 +194,9 @@ Path tube::Path::withRoundedCaps(float radius) {
     float endTilt = this->points.back().tilt;
     std::vector<Point> end(segments);
     for (int i = 0; i < end.size(); i++) {
-        float r = straightToRound((float)i / (float)segments);
-        end[i].pos = this->points.back().pos + endDir * (radius / (float)segments * ((float)i + 1.0f));
-        end[i].radius = endRadius * r;
+        float t = ((float)segments - (float)i) / ((float)segments + 1.0f);
+        end[i].pos = this->points.back().pos + endDir * radius * straightToRound(t);
+        end[i].radius = endRadius * t;
         end[i].tilt = endTilt;
     }
 
@@ -323,17 +322,15 @@ Builder Builder::withShape(Shape s) {
     return Builder(this->pathes, s);
 }
 
-Builder tube::Builder::withRoundedCaps(float radius)
-{
+Builder tube::Builder::withRoundedCaps(float radius, int segments) {
     auto builder = Builder(this->shape);
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
-        builder.pathes[i] = this->pathes[i].withRoundedCaps(radius);
+        builder.pathes[i] = this->pathes[i].withRoundedCaps(radius, segments);
     return builder;
 }
 
-Builder tube::Builder::withSquareCaps(float radius)
-{
+Builder tube::Builder::withSquareCaps(float radius) {
     auto builder = Builder(this->shape);
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
@@ -341,8 +338,7 @@ Builder tube::Builder::withSquareCaps(float radius)
     return builder;
 }
 
-Builder tube::Builder::toPoly()
-{
+Builder tube::Builder::toPoly() {
     auto builder = Builder(this->shape);
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
@@ -354,8 +350,7 @@ Builder tube::Builder::copy() {
     return Builder(this->pathes, this->shape);
 }
 
-Tube tube::Builder::apply()
-{
+Tube tube::Builder::apply() {
     std::vector<Tube> tubes;
     for (auto path : this->pathes)
         tubes.push_back(Tube(path, this->shape));

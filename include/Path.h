@@ -44,7 +44,7 @@ struct Path {
 	Path bevelJoin();
 	Path roundJoin(float radius);
 	Path miterJoin(float radius);
-	Path withRoundedCaps(float radius);
+	Path withRoundedCaps(float radius, int segments = 24);
 	Path withSquareCaps(float radius);
 	Path taper();
 	Path copy();
@@ -72,7 +72,7 @@ struct Builder {
 	Builder(Shape shape);
 
 	Builder withShape(Shape s);
-	Builder withRoundedCaps(float radius);
+	Builder withRoundedCaps(float radius, int segments = 24);
 	Builder withSquareCaps(float radius);
 	Builder toPoly();
 	Builder copy();
