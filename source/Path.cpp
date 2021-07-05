@@ -1,5 +1,6 @@
 #include "..\include\Path.h"
 #include "..\include\Path.h"
+#include "..\include\Path.h"
 #include "Path.h"
 #include "Bezier.h"
 #include "Tube.h"
@@ -297,8 +298,8 @@ Shape tube::Path::toShape(int segmentsPerCurve) {
     return shape;
 }
 
-Builder::Builder(std::vector<Path> pathes, Shape shape)
-    : pathes(pathes), shape(shape)
+Builder::Builder(std::vector<Path> pathes, Shape shape, bool fillCaps)
+    : pathes(pathes), shape(shape), fillCaps(fillCaps)
 {
 }
 
@@ -313,17 +314,17 @@ Builder::Builder(Path path)
 {
 }
 
-Builder::Builder(Shape shape)
-    : shape(shape)
+Builder::Builder(Shape shape, bool fillCaps)
+    : shape(shape), fillCaps(fillCaps)
 {
 }
 
 Builder Builder::withShape(Shape s) {
-    return Builder(this->pathes, s);
+    return Builder(this->pathes, s, this->fillCaps);
 }
 
 Builder tube::Builder::withRoundedCaps(float radius, int segments) {
-    auto builder = Builder(this->shape);
+    auto builder = Builder(this->shape, this->fillCaps);
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
         builder.pathes[i] = this->pathes[i].withRoundedCaps(radius, segments);
@@ -331,15 +332,22 @@ Builder tube::Builder::withRoundedCaps(float radius, int segments) {
 }
 
 Builder tube::Builder::withSquareCaps(float radius) {
-    auto builder = Builder(this->shape);
+    auto builder = Builder(this->shape, this->fillCaps);
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
         builder.pathes[i] = this->pathes[i].withSquareCaps(radius);
     return builder;
 }
 
+Builder tube::Builder::withFilledCaps()
+{
+    auto builder = this->copy();
+    builder.fillCaps = true;
+    return builder;
+}
+
 Builder tube::Builder::toPoly() {
-    auto builder = Builder(this->shape);
+    auto builder = Builder(this->shape, this->fillCaps);
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
         builder.pathes[i] = this->pathes[i].toPoly();
@@ -347,12 +355,12 @@ Builder tube::Builder::toPoly() {
 }
 
 Builder tube::Builder::copy() {
-    return Builder(this->pathes, this->shape);
+    return Builder(this->pathes, this->shape, this->fillCaps);
 }
 
 Tube tube::Builder::apply() {
     std::vector<Tube> tubes;
     for (auto path : this->pathes)
-        tubes.push_back(Tube(path, this->shape));
+        tubes.push_back(Tube(path, this->shape, this->fillCaps ? TubeCaps::FILL : TubeCaps::NONE));
     return Tube(tubes);
 }

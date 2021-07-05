@@ -15,6 +15,9 @@ class Tube {
 	void extrude(std::vector<glm::vec3> verts, bool shapeClosed);
 	void bridge(int a1, int a2, int b1, int b2);
 	void connectStartWithEnd(int shapeNumVertices);
+	void triangleFan(int offset, int shapeVerts, int tipIndex);
+	glm::vec3 getCentroidOfShape(int offset, int shapeVerts);
+
 	bool mIsFirst = true;
 
 public:

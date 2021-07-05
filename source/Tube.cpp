@@ -57,6 +57,41 @@ void Tube::connectStartWithEnd(int shapeNumVertices) {
 	}
 }
 
+void Tube::triangleFan(int offset, int shapeVerts, int tipIndex) {
+	size_t amount = (size_t)shapeVerts * 3;
+
+	auto tris = std::vector<int>(amount);
+
+	int k = 0;
+	for (size_t i = 0; i < amount - 3; i += 3) {
+		size_t first = 1;
+		size_t second = 2;
+
+		tris[i] = tipIndex;
+
+		if (k == shapeVerts - 2) {
+			// fill gap between first and last edge
+			tris[i + first] = k + offset;
+			tris[i + second] = offset;
+		}
+		else
+		{
+			// connect current edge with next
+			tris[i + first] = k + offset;
+			tris[i + second] = k + 1 + offset;
+			k++;
+		}
+	}
+	this->indices.insert(this->indices.end(), tris.begin(), tris.end());
+}
+
+glm::vec3 Tube::getCentroidOfShape(int offset, int shapeVerts) {
+	auto sum = glm::vec3(0.0f);
+	for (int i = offset; i < offset + shapeVerts; i++)
+		sum += this->vertices[i];
+	return sum / (float)shapeVerts;
+}
+
 Tube::Tube(Path path, Shape& shape, TubeCaps caps) {
 	if (path.hasNonPoly())
 		path = path.toPoly();
@@ -97,6 +132,27 @@ Tube::Tube(Path path, Shape& shape, TubeCaps caps) {
 
 		if (path.closed)
 			connectStartWithEnd((int)shape.verts.size());
+	}
+
+	if (caps == TubeCaps::FILL) {
+		int start = 0;
+		int end = (int)this->vertices.size() - (int)shape.verts.size();
+
+		glm::vec3 startCenter = getCentroidOfShape(start, (int)shape.verts.size());
+		glm::vec3 endCenter = getCentroidOfShape(end, (int)shape.verts.size());
+
+		auto tips = std::vector<glm::vec3>({ startCenter, endCenter });
+		this->vertices.insert(this->vertices.end(), tips.begin(), tips.end());
+
+		int startTipIdx = (int)this->vertices.size() - 2;
+		int endTipIdx = (int)this->vertices.size() - 1;
+
+		// Fill the first loop with triangles
+		triangleFan(start, (int)shape.verts.size(), startTipIdx);
+
+		// Fill the last loop with triangles without last vertex
+		// (start tip) to not connect start tip with end tip
+		triangleFan(end, (int)shape.verts.size() - 1, endTipIdx);
 	}
 }
 

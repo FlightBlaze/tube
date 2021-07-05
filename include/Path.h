@@ -65,15 +65,17 @@ struct Shape {
 struct Builder {
 	std::vector<Path> pathes;
 	Shape shape;
+	bool fillCaps = false;
 
-	Builder(std::vector<Path> pathes, Shape shape);
+	Builder(std::vector<Path> pathes, Shape shape, bool fillCaps);
 	Builder(std::vector<Path> pathes);
 	Builder(Path path);
-	Builder(Shape shape);
+	Builder(Shape shape, bool fillCaps);
 
 	Builder withShape(Shape s);
 	Builder withRoundedCaps(float radius, int segments = 24);
 	Builder withSquareCaps(float radius);
+	Builder withFilledCaps();
 	Builder toPoly();
 	Builder copy();
 	Tube apply();
