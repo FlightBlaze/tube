@@ -92,9 +92,16 @@ glm::vec3 Tube::getCentroidOfShape(int offset, int shapeVerts) {
 	return sum / (float)shapeVerts;
 }
 
-Tube::Tube(Path path, Shape& shape, TubeCaps caps) {
+// #include <iostream>
+
+Tube::Tube(Path path, Shape& shape) {
 	if (path.hasNonPoly())
 		path = path.toPoly();
+
+	// Need for generating texture coordinates
+
+	float pathLength = path.length();
+	float curLength = 0.0f;
 
 	for (size_t i = 0; i < path.points.size(); i++) {
 		bool isStart = i == 0;
@@ -130,41 +137,51 @@ Tube::Tube(Path path, Shape& shape, TubeCaps caps) {
 
 		extrude(transformedShape, shape.closed);
 
-		if (path.closed)
-			connectStartWithEnd((int)shape.verts.size());
+		// Generate texture coordinates
+
+		float shapeEnd = (float)shape.verts.size() - 1;
+		for (int p = 0; p < shape.verts.size(); p++) {
+			float u = p / shapeEnd;
+			float v = curLength / pathLength;
+			// std::cout << u << ", " << v << std::endl;
+			texCoords.push_back(glm::vec2(u, v));
+		}
+		curLength += glm::length(curPoint.pos - nextPoint.pos);
 	}
+	if (path.closed)
+		connectStartWithEnd((int)shape.verts.size());
 
-	if (caps == TubeCaps::FILL) {
-		int start = 0;
-		int end = (int)this->vertices.size() - (int)shape.verts.size();
-
-		glm::vec3 startCenter = getCentroidOfShape(start, (int)shape.verts.size());
-		glm::vec3 endCenter = getCentroidOfShape(end, (int)shape.verts.size());
-
-		auto tips = std::vector<glm::vec3>({ startCenter, endCenter });
-		this->vertices.insert(this->vertices.end(), tips.begin(), tips.end());
-
-		int startTipIdx = (int)this->vertices.size() - 2;
-		int endTipIdx = (int)this->vertices.size() - 1;
-
-		// Fill the first loop with triangles
-		triangleFan(start, (int)shape.verts.size(), startTipIdx);
-
-		// Fill the last loop with triangles without last vertex
-		// (start tip) to not connect start tip with end tip
-		triangleFan(end, (int)shape.verts.size() - 1, endTipIdx);
-	}
+	this->mShapeNumVerts = (int)shape.verts.size();
 }
 
 Tube::Tube(std::vector<Tube> tubes) {
+	if (tubes.size() == 0)
+		return;
+	this->mShapeNumVerts = tubes[0].mShapeNumVerts;
 	size_t indicesEnd = 0;
 	for (auto tube : tubes) {
 		this->vertices.insert(this->vertices.end(), tube.vertices.begin(), tube.vertices.end());
+		this->texCoords.insert(this->texCoords.end(), tube.texCoords.begin(), tube.texCoords.end());
 		this->indices.resize(this->indices.size() + tube.indices.size());
 		for (size_t i = 0; i < tube.indices.size(); i++)
 			this->indices[indicesEnd + i] = (int)indicesEnd + tube.indices[i];
 		indicesEnd += tube.indices.size();
 	}
+}
+
+Tube::Tube()
+{
+}
+
+Tube Tube::copy() {
+	auto c = Tube();
+	c.mShapeNumVerts = this->mShapeNumVerts;
+	c.vertices.insert(c.vertices.end(), this->vertices.begin(), this->vertices.end());
+	c.texCoords.insert(c.texCoords.end(), this->texCoords.begin(), this->texCoords.end());
+	c.indices.resize(c.indices.size() + this->indices.size());
+	for (size_t i = 0; i < this->indices.size(); i++)
+		c.indices[i] = this->indices[i];
+	return c;
 }
 
 std::vector<float> Tube::toXYZ() {
@@ -178,9 +195,55 @@ std::vector<float> Tube::toXYZ() {
 	return attribs;
 }
 
+std::vector<float> Tube::toXYZUV() {
+	assert(this->vertices.size() == this->texCoords.size());
+
+	auto attribs = std::vector<float>(this->vertices.size() * 5);
+	for (size_t i = 0; i < vertices.size(); i++) {
+		glm::vec3 vertex = vertices[i];
+		glm::vec2 texCoord = texCoords[i];
+		// std::cout << texCoord.x << ", " << texCoord.y << std::endl;
+		attribs[i * 5LL] = vertex.x;
+		attribs[i * 5LL + 1LL] = vertex.y;
+		attribs[i * 5LL + 2LL] = vertex.z;
+		attribs[i * 5LL + 3LL] = texCoord.x;
+		attribs[i * 5LL + 4LL] = texCoord.y;
+	}
+	return attribs;
+}
+
+Tube Tube::fillCaps(TubeCaps capsType) {
+	if (capsType == TubeCaps::TRIANGE_FAN) {
+		int start = 0;
+		int end = (int)this->vertices.size() - mShapeNumVerts;
+
+		glm::vec3 startCenter = getCentroidOfShape(start, mShapeNumVerts);
+		glm::vec3 endCenter = getCentroidOfShape(end, mShapeNumVerts);
+
+		auto tips = std::vector<glm::vec3>({ startCenter, endCenter });
+		this->vertices.insert(this->vertices.end(), tips.begin(), tips.end());
+
+		auto tipTexCoords = std::vector<glm::vec2>({ glm::vec2(0.5f, 0.0f), glm::vec2(0.5f, 1.0f) });
+		this->texCoords.insert(this->texCoords.end(), tipTexCoords.begin(), tipTexCoords.end());
+
+		int startTipIdx = (int)this->vertices.size() - 2;
+		int endTipIdx = (int)this->vertices.size() - 1;
+
+		// Fill the first loop with triangles
+		triangleFan(start, mShapeNumVerts, startTipIdx);
+
+		// Fill the last loop with triangles without last vertex
+		// (start tip) to not connect start tip with end tip
+		triangleFan(end, mShapeNumVerts - 1, endTipIdx);
+	}
+	return *this;
+}
+
 Tube Tube::join(Tube a, Tube& b) {
 	size_t indicesEnd = a.indices.size();
+	a.mShapeNumVerts = b.mShapeNumVerts;
 	a.vertices.insert(a.vertices.end(), b.vertices.begin(), b.vertices.end());
+	a.texCoords.insert(a.texCoords.end(), b.texCoords.begin(), b.texCoords.end());
 	a.indices.resize(a.indices.size() + b.indices.size());
 	for (size_t i = 0; i < b.indices.size(); i++)
 		a.indices[indicesEnd + i] = (int)indicesEnd + b.indices[i];
