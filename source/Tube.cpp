@@ -24,7 +24,7 @@ void Tube::extrude(std::vector<glm::vec3> verts, bool shapeClosed) {
 			secondPart + edge + 1
 		);
 	}
-
+	/*
 	if (shapeClosed) {
 		int lastVertex = (int)verts.size() - 1;
 		bridge(
@@ -34,6 +34,7 @@ void Tube::extrude(std::vector<glm::vec3> verts, bool shapeClosed) {
 			secondPart
 		);
 	}
+	*/
 }
 
 void Tube::bridge(int a1, int a2, int b1, int b2) {
@@ -92,7 +93,7 @@ glm::vec3 Tube::getCentroidOfShape(int offset, int shapeVerts) {
 	return sum / (float)shapeVerts;
 }
 
-// #include <iostream>
+#include <iostream>
 
 Tube::Tube(Path path, Shape& shape) {
 	if (path.hasNonPoly())
@@ -110,15 +111,21 @@ Tube::Tube(Path path, Shape& shape) {
 		Point curPoint = path.points[i];
 		Point backPoint = !isStart ? path.points[i - 1LL] : curPoint;
 		Point nextPoint = !isEnd   ? path.points[i + 1LL] : curPoint;
+		
+		if (isStart && path.closed)
+			backPoint = path.points[path.points.size() - 2];
 
+		else if (isEnd && path.closed)
+			nextPoint = path.points[1];
+		
 		glm::vec3 forwardDir  = glm::normalize(nextPoint.pos - curPoint.pos);
 		glm::vec3 backwardDir = glm::normalize(backPoint.pos - curPoint.pos) * -1.0f;
 
 		glm::vec3 meanDir;
 
-		if      (isStart) meanDir = forwardDir;
-		else if (isEnd)   meanDir = backwardDir;
-		else              meanDir = glm::normalize((forwardDir + backwardDir) / 2.0f);
+		if      (isStart && !path.closed) meanDir = forwardDir;
+		else if (isEnd && !path.closed)   meanDir = backwardDir;
+		else                              meanDir = glm::normalize((forwardDir + backwardDir) / 2.0f);
 
 		glm::mat4 identity = glm::mat4(1.0f);
 		glm::vec3 up = glm::vec3(0, 0, 1);
@@ -139,7 +146,7 @@ Tube::Tube(Path path, Shape& shape) {
 
 		// Generate texture coordinates
 
-		float shapeEnd = (float)shape.verts.size() - 1;
+		float shapeEnd = (float)shape.verts.size();
 		for (int p = 0; p < shape.verts.size(); p++) {
 			float u = p / shapeEnd;
 			float v = curLength / pathLength;
@@ -148,8 +155,8 @@ Tube::Tube(Path path, Shape& shape) {
 		}
 		curLength += glm::length(curPoint.pos - nextPoint.pos);
 	}
-	if (path.closed)
-		connectStartWithEnd((int)shape.verts.size());
+	// if (path.closed)
+	//	connectStartWithEnd((int)shape.verts.size());
 
 	this->mShapeNumVerts = (int)shape.verts.size();
 }
@@ -263,7 +270,7 @@ Shape Shapes::circle(float radius, int segments)
 
 		shape.verts[i] = glm::vec3(x, y, 0.0f);
 
-		angle += (arcLength / segments);
+		angle += (arcLength / (segments - 1));
 	}
 	return shape;
 }

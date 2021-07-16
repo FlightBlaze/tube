@@ -265,11 +265,12 @@ Path tube::Path::toPoly(int segmentsPerCurve) {
     
     if (polypath.closed) {
         // Connect last point with first
-        auto polycurve = Point::toPoly(this->points[0], this->points[this->points.size() - 1], segmentsPerCurve);
+        auto polycurve = Point::toPoly(this->points[this->points.size() - 1], this->points[0], segmentsPerCurve);
 
-        // Add points without first and last because they are duplicates
+        // Add points without first because they are duplicate
+        // polypath.points.clear();
         polypath.points.insert(polypath.points.end(),
-            polycurve.begin() + 1, polycurve.end() - 1);
+            polycurve.begin() + 1, polycurve.end());
     }
     return polypath;
 }
@@ -291,9 +292,9 @@ Shape tube::Path::toShape(int segmentsPerCurve) {
     }
 
     if (shape.closed) {
-        auto curve = Point::toVectors(this->points[0], this->points[this->points.size() - 1], segmentsPerCurve);
+        auto curve = Point::toVectors(this->points[this->points.size() - 1], this->points[0], segmentsPerCurve);
         shape.verts.insert(shape.verts.end(),
-            curve.begin() + 1, curve.end() - 1);
+            curve.begin() + 1, curve.end());
     }
     return shape;
 }
