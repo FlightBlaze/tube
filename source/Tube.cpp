@@ -93,7 +93,7 @@ glm::vec3 Tube::getCentroidOfShape(int offset, int shapeVerts) {
 	return sum / (float)shapeVerts;
 }
 
-#include <iostream>
+// #include <iostream>
 
 Tube::Tube(Path path, Shape& shape) {
 	if (path.hasNonPoly())
@@ -146,7 +146,7 @@ Tube::Tube(Path path, Shape& shape) {
 
 		// Generate texture coordinates
 
-		float shapeEnd = (float)shape.verts.size();
+		float shapeEnd = (float)shape.verts.size() - 1.0f;
 		for (int p = 0; p < shape.verts.size(); p++) {
 			float u = p / shapeEnd;
 			float v = curLength / pathLength;
