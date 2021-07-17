@@ -89,6 +89,17 @@ ThreePoints tube::Point::divide(Point start, Point end, float t)
     return points;
 }
 
+float tube::Point::length(Point start, Point end) {
+    auto poly = Point::toPoly(start, end);
+    glm::vec3 previousPos = poly[0].pos;
+    float len = 0;
+    for (int i = 1; i < poly.size(); i++) {
+        len += glm::length(poly[i].pos - previousPos);
+        previousPos = poly[i].pos;
+    }
+    return len;
+}
+
 std::vector<glm::vec3> Point::toVectors(Point start, Point end, int segments) {
     std::vector<glm::vec3> verts;
     if (start.hasRightHandle && end.hasLeftHandle) {
@@ -162,6 +173,48 @@ Path tube::Path::copy() {
 }
 
 // #include <iostream>
+
+float bevel_t(float len, float r = 0.05f) {
+    return (len - r) / len;
+}
+
+Path tube::Path::bevelOrRoundJoin(float radius, bool isRound) {
+    Path path = this->copy();
+    const float r = radius / 2;
+
+    for (size_t i = 0; i + 2 < path.points.size(); i += 2) {
+        float tA =        bevel_t(Point::length(path.points[i + 0], path.points[i + 1]), r);
+        float tB = 1.0f - bevel_t(Point::length(path.points[i + 1], path.points[i + 2]), r);
+
+        auto upperArm = Point::divide(path.points[i + 0], path.points[i + 1], tA);
+        if (isRound) {
+            upperArm.B.hasRightHandle = true;
+            upperArm.B.rightHandlePos = upperArm.C.pos;
+        }
+        else
+            upperArm.B.hasRightHandle = false;
+
+        auto lowerArm = Point::divide(path.points[i + 1], path.points[i + 2], tB);
+        lowerArm.B.hasLeftHandle = false;
+
+        auto newPoints = std::vector<Point>({
+            upperArm.A, upperArm.B,
+            lowerArm.B, lowerArm.C
+            });
+
+        path.points.erase(path.points.begin() + i, path.points.begin() + i + 3);
+        path.points.insert(path.points.begin() + i, newPoints.begin(), newPoints.end());
+    }
+    return path;
+}
+
+Path tube::Path::bevelJoin(float radius) {
+    return bevelOrRoundJoin(radius, false);
+}
+
+Path tube::Path::roundJoin(float radius) {
+    return bevelOrRoundJoin(radius, true);
+}
 
 float straightToRound(float t) {
     return sqrt(1 - t * t);
@@ -345,6 +398,23 @@ Builder::Builder(Shape shape)
 Builder Builder::withShape(Shape s) {
     return Builder(this->pathes, s);
 }
+
+Builder tube::Builder::bevelJoin(float radius) {
+    auto builder = Builder(this->shape);
+    builder.pathes.resize(this->pathes.size());
+    for (int i = 0; i < this->pathes.size(); i++)
+        builder.pathes[i] = this->pathes[i].bevelJoin(radius);
+    return builder;
+}
+
+Builder tube::Builder::roundJoin(float radius) {
+    auto builder = Builder(this->shape);
+    builder.pathes.resize(this->pathes.size());
+    for (int i = 0; i < this->pathes.size(); i++)
+        builder.pathes[i] = this->pathes[i].roundJoin(radius);
+    return builder;
+}
+
 
 Builder tube::Builder::withRoundedCaps(float radius, int segments) {
     auto builder = Builder(this->shape);

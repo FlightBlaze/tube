@@ -20,6 +20,7 @@ struct Point {
 	Point(glm::vec3 pos);
 
 	static ThreePoints divide(Point start, Point end, float t);
+	static float length(Point start, Point end);
 	static std::vector<glm::vec3> toVectors(Point start, Point end, int segments = 32);
 	static std::vector<Point> toPoly(Point start, Point end, int segments = 32);
 };
@@ -41,7 +42,7 @@ struct Path {
 	TwoPathes divide(float t);
 	Path slice(float start, float end);
 	std::vector<Path> dash(float step);
-	Path bevelJoin();
+	Path bevelJoin(float radius);
 	Path roundJoin(float radius);
 	Path miterJoin(float radius);
 	Path withRoundedCaps(float radius, int segments = 24);
@@ -51,6 +52,9 @@ struct Path {
 	Path toPoly(int segmentsPerCurve = 32);
 	Shape toShape(int segmentsPerCurve = 32);
 	float length();
+
+private:
+	Path bevelOrRoundJoin(float radius, bool isRound);
 };
 
 struct TwoPathes {
@@ -73,6 +77,8 @@ struct Builder {
 	Builder(Shape shape);
 
 	Builder withShape(Shape s);
+	Builder bevelJoin(float radius);
+	Builder roundJoin(float radius);
 	Builder withRoundedCaps(float radius, int segments = 24);
 	Builder withSquareCaps(float radius);
 	Builder toPoly();
