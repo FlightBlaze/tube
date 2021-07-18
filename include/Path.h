@@ -18,6 +18,8 @@ struct Point {
 
 	Point();
 	Point(glm::vec3 pos);
+	Point(glm::vec3 pos, glm::vec3 rightHandle);
+	Point(glm::vec3 pos, glm::vec3 leftHandle, glm::vec3 rightHandle);
 
 	static ThreePoints divide(Point start, Point end, float t);
 	static float length(Point start, Point end);
@@ -49,6 +51,7 @@ struct Path {
 	Path withSquareCaps(float radius);
 	Path taper();
 	Path copy();
+	Path close();
 	Path toPoly(int segmentsPerCurve = 32);
 	Shape toShape(int segmentsPerCurve = 32);
 	float length();

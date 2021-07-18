@@ -98,6 +98,8 @@ glm::vec3 Tube::getCentroidOfShape(int offset, int shapeVerts) {
 Tube::Tube(Path path, Shape& shape) {
 	if (path.hasNonPoly())
 		path = path.toPoly();
+	else if(path.closed)
+		path = path.close();
 
 	// Need for generating texture coordinates
 

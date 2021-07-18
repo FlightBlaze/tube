@@ -17,6 +17,17 @@ Point::Point(glm::vec3 pos)
 {
 }
 
+Point::Point(glm::vec3 pos, glm::vec3 rightHandle)
+    : pos(pos), rightHandlePos(rightHandle), hasRightHandle(true)
+{
+}
+
+Point::Point(glm::vec3 pos, glm::vec3 leftHandle, glm::vec3 rightHandle)
+    : pos(pos), leftHandlePos(leftHandle), rightHandlePos(rightHandle),
+        hasLeftHandle(true), hasRightHandle(true)
+{
+}
+
 ThreePoints tube::Point::divide(Point start, Point end, float t)
 {
     ThreePoints points;
@@ -169,6 +180,19 @@ Path tube::Path::copy() {
     Path path;
     path.closed = this->closed;
     path.points = this->points;
+    return path;
+}
+
+Path tube::Path::close() {
+    assert(this->points.size() > 0);
+    auto path = this->copy();
+    auto end = tube::Point();
+    end.pos = path.points[0].pos;
+    end.radius = path.points[0].radius;
+    end.tilt = path.points[0].tilt;
+    end.leftHandlePos = path.points[0].leftHandlePos;
+    end.hasLeftHandle = path.points[0].hasLeftHandle;
+    path.points.push_back(end);
     return path;
 }
 
