@@ -82,6 +82,7 @@ struct Builder {
 	Builder withShape(Shape s);
 	Builder bevelJoin(float radius);
 	Builder roundJoin(float radius);
+	Builder miterJoin(float radius);
 	Builder withRoundedCaps(float radius, int segments = 24);
 	Builder withSquareCaps(float radius);
 	Builder toPoly();

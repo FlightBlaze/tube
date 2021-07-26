@@ -196,8 +196,6 @@ Path tube::Path::close() {
     return path;
 }
 
-// #include <iostream>
-
 float bevel_t(float len, float r = 0.05f) {
     return (len - r) / len;
 }
@@ -224,7 +222,7 @@ Path tube::Path::bevelOrRoundJoin(float radius, bool isRound) {
         auto newPoints = std::vector<Point>({
             upperArm.A, upperArm.B,
             lowerArm.B, lowerArm.C
-            });
+        });
 
         path.points.erase(path.points.begin() + i, path.points.begin() + i + 3);
         path.points.insert(path.points.begin() + i, newPoints.begin(), newPoints.end());
@@ -239,6 +237,57 @@ Path tube::Path::bevelJoin(float radius) {
 Path tube::Path::roundJoin(float radius) {
     return bevelOrRoundJoin(radius, true);
 }
+
+#include <iostream>
+
+Path tube::Path::miterJoin(float radius) {
+    Path path = this->copy();
+    const float r = radius / 2;
+
+    for (size_t i = 0; i + 2 < path.points.size(); i += 3) {
+        float tA = bevel_t(Point::length(path.points[i + 0], path.points[i + 1]), r);
+        float tB = 1.0f - bevel_t(Point::length(path.points[i + 1], path.points[i + 2]), r);
+
+        auto upperArm = Point::divide(path.points[i + 0], path.points[i + 1], tA);
+        upperArm.B.hasRightHandle = false;
+
+        auto lowerArm = Point::divide(path.points[i + 1], path.points[i + 2], tB);
+        lowerArm.B.hasLeftHandle = false;
+
+        auto tip = upperArm.C;
+        tip.hasRightHandle = false;
+        tip.hasLeftHandle = false;
+        // tip.pos = (upperArm.B.pos + lowerArm.B.pos) / 2.0f;
+
+        auto codirection = glm::dot(
+            glm::normalize(upperArm.B.pos - upperArm.A.pos),
+            glm::normalize(lowerArm.C.pos - lowerArm.B.pos)
+        );
+
+        auto tipDir = -glm::normalize(
+            (
+                glm::normalize(upperArm.A.pos - upperArm.B.pos) +
+                glm::normalize(lowerArm.C.pos - lowerArm.B.pos)
+            ) / 2.0f
+        );
+        tip.pos += tipDir * r;// * (2 - codirection);
+
+        std::cout << "CoDir: " << codirection << std::endl;
+        std::cout << "Half-Radius: " << r << std::endl;
+        std::cout << "Magic number: " << 1.4f << std::endl;
+
+        auto newPoints = std::vector<Point>({
+            upperArm.A, upperArm.B,
+            tip,
+            lowerArm.B, lowerArm.C
+        });
+
+        path.points.erase(path.points.begin() + i, path.points.begin() + i + 3);
+        path.points.insert(path.points.begin() + i, newPoints.begin(), newPoints.end());
+    }
+    return path;
+}
+
 
 float straightToRound(float t) {
     return sqrt(1 - t * t);
@@ -436,6 +485,15 @@ Builder tube::Builder::roundJoin(float radius) {
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
         builder.pathes[i] = this->pathes[i].roundJoin(radius);
+    return builder;
+}
+
+Builder tube::Builder::miterJoin(float radius)
+{
+    auto builder = Builder(this->shape);
+    builder.pathes.resize(this->pathes.size());
+    for (int i = 0; i < this->pathes.size(); i++)
+        builder.pathes[i] = this->pathes[i].miterJoin(radius);
     return builder;
 }
 

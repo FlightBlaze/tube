@@ -25,6 +25,7 @@ class Tube {
 
 public:
 	std::vector<glm::vec3> vertices;
+	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> texCoords;
 	std::vector<int> indices;
 
@@ -36,6 +37,13 @@ public:
 	// Fill caps in place and return this instance of class.
 	// If you need to fill caps in copy only, consider using .copy() before .fillCaps()
 	Tube fillCaps(TubeCaps capsType = TubeCaps::TRIANGE_FAN);
+
+	// Calculate normals in place
+	// If you need to calculate normals in copy only, consider using .copy() before .fillCaps()
+	Tube calculateNormals();
+
+	// To positions, texture coordinates and normals
+	std::vector<float> toXYZUVNormal();
 
 	// To positions and texture coordinates
 	std::vector<float> toXYZUV();

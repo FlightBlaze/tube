@@ -170,6 +170,7 @@ Tube::Tube(std::vector<Tube> tubes) {
 	size_t indicesEnd = 0;
 	for (auto tube : tubes) {
 		this->vertices.insert(this->vertices.end(), tube.vertices.begin(), tube.vertices.end());
+		this->normals.insert(this->normals.end(), tube.normals.begin(), tube.normals.end());
 		this->texCoords.insert(this->texCoords.end(), tube.texCoords.begin(), tube.texCoords.end());
 		this->indices.resize(this->indices.size() + tube.indices.size());
 		for (size_t i = 0; i < tube.indices.size(); i++)
@@ -186,6 +187,7 @@ Tube Tube::copy() {
 	auto c = Tube();
 	c.mShapeNumVerts = this->mShapeNumVerts;
 	c.vertices.insert(c.vertices.end(), this->vertices.begin(), this->vertices.end());
+	c.normals.insert(c.normals.end(), this->normals.begin(), this->normals.end());
 	c.texCoords.insert(c.texCoords.end(), this->texCoords.begin(), this->texCoords.end());
 	c.indices.resize(c.indices.size() + this->indices.size());
 	for (size_t i = 0; i < this->indices.size(); i++)
@@ -221,6 +223,27 @@ std::vector<float> Tube::toXYZUV() {
 	return attribs;
 }
 
+std::vector<float> Tube::toXYZUVNormal() {
+	assert(this->vertices.size() == this->texCoords.size());
+	assert(this->vertices.size() == this->normals.size());
+
+	auto attribs = std::vector<float>(this->vertices.size() * 8);
+	for (size_t i = 0; i < vertices.size(); i++) {
+		glm::vec3 vertex = vertices[i];
+		glm::vec2 texCoord = texCoords[i];
+		glm::vec3 normal = normals[i];
+		attribs[i * 8LL] = vertex.x;
+		attribs[i * 8LL + 1LL] = vertex.y;
+		attribs[i * 8LL + 2LL] = vertex.z;
+		attribs[i * 8LL + 3LL] = texCoord.x;
+		attribs[i * 8LL + 4LL] = texCoord.y;
+		attribs[i * 8LL + 5LL] = normal.x;
+		attribs[i * 8LL + 6LL] = normal.y;
+		attribs[i * 8LL + 7LL] = normal.z;
+	}
+	return attribs;
+}
+
 Tube Tube::fillCaps(TubeCaps capsType) {
 	if (capsType == TubeCaps::TRIANGE_FAN) {
 		int start = 0;
@@ -248,10 +271,39 @@ Tube Tube::fillCaps(TubeCaps capsType) {
 	return *this;
 }
 
+glm::vec3 computeFaceNormal(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) {
+	// Uses p2 as a new origin for p1,p3
+	auto a = p3 - p2;
+	auto b = p1 - p2;
+	// Compute the cross product a X b to get the face normal
+	return glm::normalize(glm::cross(a, b));
+}
+
+Tube Tube::calculateNormals() {
+	this->normals = std::vector<glm::vec3>(this->vertices.size());
+	// For each face calculate normals and append to the corresponding vertices of the face
+	for (unsigned int i = 0; i < this->indices.size(); i += 3) {
+		//vi v(i+1) v(i+2) are the three faces of a triangle
+		glm::vec3 A = this->vertices[this->indices[i]];
+		glm::vec3 B = this->vertices[this->indices[i + 1LL]];
+		glm::vec3 C = this->vertices[this->indices[i + 2LL]];
+		glm::vec3 normal = computeFaceNormal(A, B, C);
+		this->normals[this->indices[i]] += normal;
+		this->normals[this->indices[i + 1LL]] += normal;
+		this->normals[this->indices[i + 2LL]] += normal;
+	}
+	// Normalize each normal
+	for (unsigned int i = 0; i < this->normals.size(); i++)
+		this->normals[i] = glm::normalize(this->normals[i]);
+
+	return *this;
+}
+
 Tube Tube::join(Tube a, Tube& b) {
 	size_t indicesEnd = a.indices.size();
 	a.mShapeNumVerts = b.mShapeNumVerts;
 	a.vertices.insert(a.vertices.end(), b.vertices.begin(), b.vertices.end());
+	a.normals.insert(a.normals.end(), b.normals.begin(), b.normals.end());
 	a.texCoords.insert(a.texCoords.end(), b.texCoords.begin(), b.texCoords.end());
 	a.indices.resize(a.indices.size() + b.indices.size());
 	for (size_t i = 0; i < b.indices.size(); i++)
