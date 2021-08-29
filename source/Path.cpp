@@ -1,6 +1,10 @@
 #include "..\include\Path.h"
 #include "..\include\Path.h"
 #include "..\include\Path.h"
+#include "..\include\Path.h"
+#include "..\include\Path.h"
+#include "..\include\Path.h"
+#include "..\include\Path.h"
 #include "Path.h"
 #include "Bezier.h"
 #include "Tube.h"
@@ -194,6 +198,71 @@ Path tube::Path::close() {
     end.hasLeftHandle = path.points[0].hasLeftHandle;
     path.points.push_back(end);
     return path;
+}
+
+Path tube::Path::evenlyDistributed(float len) {
+    assert(!this->hasNonPoly());
+    assert(this->points.size() >= 2);
+    Path path;
+    path.closed = this->closed;
+
+    path.points.push_back(tube::Point(this->points[0].pos));
+    path.points[0].radius = this->points[0].radius;
+    path.points[0].tilt = this->points[0].tilt;
+
+    float fullLength = this->length();
+    auto lengths = this->getPolyLengths();
+    for (float currentLen = len; currentLen < fullLength; currentLen += len) {
+        path.points.push_back(this->getPointAtT(this->getTAtLength(currentLen, lengths)));
+    }
+
+    path.points.push_back(tube::Point(this->points.back().pos));
+    path.points.back().radius = this->points.back().radius;
+    path.points.back().tilt = this->points.back().tilt;
+
+    return path;
+}
+
+float tube::Path::getTAtLength(float len, std::vector<float>& lengths) {
+    size_t pointBeforeLen = 0;
+    float previousLength = 0.0f;
+    float currentLength = 0.0f;
+    float localT = 0.0f;
+    for (size_t i = 0; i < lengths.size(); i++) {
+        previousLength = currentLength;
+        currentLength += lengths[i];
+        if (len < currentLength) {
+            pointBeforeLen = i;
+            localT = (len - previousLength) / lengths[i];
+            break;
+        }
+    }
+    float t = ((float)pointBeforeLen + localT) / (float)lengths.size();
+    return t;
+}
+
+Point tube::Path::getPointAtT(float t) {
+    int numArcs = (int)this->points.size() - 1;
+    float remapedT = t * (float)numArcs;
+    int arc = (int)floorf(remapedT);
+    if (arc == numArcs)
+        arc--;
+    float localT = remapedT - arc;
+    auto& start = this->points[(size_t)arc];
+    auto& end = this->points[(size_t)arc + 1LL];
+    return Point::divide(start, end, localT).B;
+}
+
+std::vector<float> tube::Path::getPolyLengths()
+{
+    assert(!this->hasNonPoly());
+    assert(this->points.size() >= 2);
+    size_t numLengths = this->points.size() - 1;
+    auto lengths = std::vector<float>(numLengths);
+    for (size_t i = 0; i < numLengths; i++) {
+        lengths[i] = glm::distance(this->points[i].pos, this->points[i + 1LL].pos);
+    }
+    return lengths;
 }
 
 float bevel_t(float len, float r = 0.05f) {
@@ -511,6 +580,14 @@ Builder tube::Builder::withSquareCaps(float radius) {
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
         builder.pathes[i] = this->pathes[i].withSquareCaps(radius);
+    return builder;
+}
+
+Builder tube::Builder::evenlyDistributed(float len) {
+    auto builder = Builder(this->shape);
+    builder.pathes.resize(this->pathes.size());
+    for (int i = 0; i < this->pathes.size(); i++)
+        builder.pathes[i] = this->pathes[i].evenlyDistributed(len);
     return builder;
 }
 

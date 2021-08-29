@@ -52,8 +52,12 @@ struct Path {
 	Path taper();
 	Path copy();
 	Path close();
+	Path evenlyDistributed(float len);
 	Path toPoly(int segmentsPerCurve = 32);
 	Shape toShape(int segmentsPerCurve = 32);
+	float getTAtLength(float len, std::vector<float>& lengths);
+	Point getPointAtT(float t);
+	std::vector<float> getPolyLengths();
 	float length();
 
 private:
@@ -85,6 +89,7 @@ struct Builder {
 	Builder miterJoin(float radius);
 	Builder withRoundedCaps(float radius, int segments = 24);
 	Builder withSquareCaps(float radius);
+	Builder evenlyDistributed(float len);
 	Builder toPoly();
 	Builder copy();
 	Tube apply();
