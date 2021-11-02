@@ -328,3 +328,14 @@ Shape Shapes::circle(float radius, int segments)
 	}
 	return shape;
 }
+
+Shape Shapes::stroke2D(float radius)
+{
+    float halfR = radius / 2.0f;
+    auto shape = Shape();
+    shape.closed = false;
+    shape.verts = std::vector<glm::vec3>(2);
+    shape.verts[0] = glm::vec3(-halfR, 0.0f, 0.0f);
+    shape.verts[1] = glm::vec3(halfR, 0.0f, 0.0f);
+    return shape;
+}

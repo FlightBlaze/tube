@@ -57,6 +57,7 @@ public:
 class Shapes {
 public:
 	static Shape circle(float radius, int segments = 32);
+    static Shape stroke2D(float radius);
 };
 
 }
