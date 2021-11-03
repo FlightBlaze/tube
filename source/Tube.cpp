@@ -168,7 +168,11 @@ Tube::Tube(std::vector<Tube> tubes) {
 		return;
 	this->mShapeNumVerts = tubes[0].mShapeNumVerts;
 	size_t indicesEnd = 0;
-	for (auto tube : tubes) {
+	for (auto& tube : tubes) {
+//        for (auto& vertex : tube.vertices)
+//            this->vertices.push_back(vertex);
+//        for (size_t i = 0; i < tube.indices.size(); i++)
+//            this->indices.push_back((int)indicesEnd + tube.indices[i]);
 		this->vertices.insert(this->vertices.end(), tube.vertices.begin(), tube.vertices.end());
 		this->normals.insert(this->normals.end(), tube.normals.begin(), tube.normals.end());
 		this->texCoords.insert(this->texCoords.end(), tube.texCoords.begin(), tube.texCoords.end());
@@ -329,13 +333,13 @@ Shape Shapes::circle(float radius, int segments)
 	return shape;
 }
 
-Shape Shapes::stroke2D(float radius)
+Shape Shapes::stroke2D(float diameter)
 {
-    float halfR = radius / 2.0f;
+    float radius = diameter / 2.0f;
     auto shape = Shape();
     shape.closed = false;
     shape.verts = std::vector<glm::vec3>(2);
-    shape.verts[0] = glm::vec3(-halfR, 0.0f, 0.0f);
-    shape.verts[1] = glm::vec3(halfR, 0.0f, 0.0f);
+    shape.verts[0] = glm::vec3(-radius, 0.0f, 0.0f);
+    shape.verts[1] = glm::vec3(radius, 0.0f, 0.0f);
     return shape;
 }

@@ -43,7 +43,7 @@ struct Path {
 
 	TwoPathes divide(float t);
 	Path slice(float start, float end);
-	std::vector<Path> dash(float step);
+	std::vector<Path> dash(float dashLength, float gapLength, float offset = 0.0f);
 	Path bevelJoin(float radius);
 	Path roundJoin(float radius);
 	Path miterJoin(float radius);
@@ -92,6 +92,7 @@ struct Builder {
 	Builder evenlyDistributed(float len);
 	Builder toPoly();
 	Builder copy();
+    Builder dash(float dashLength, float gapLength, float offset = 0.0f);
 	Tube apply();
 };
 

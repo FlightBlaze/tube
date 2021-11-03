@@ -170,7 +170,62 @@ bool tube::Path::hasNonPoly() {
 
 TwoPathes tube::Path::divide(float t)
 {
-	return TwoPathes();
+    /*
+     0 ========------ 1
+     0   1  2    3    4
+            0==--1
+     */
+    float scaledT = (float)this->points.size() * t;
+    int segmentUnderKnife = (int)floorf(scaledT);
+    float segmentT = scaledT - segmentUnderKnife;
+    
+    // Clamp
+    if(segmentUnderKnife >= this->points.size()) {
+        TwoPathes twoPathes;
+        twoPathes.first.points = this->points;
+        return twoPathes;
+    }
+    if(segmentUnderKnife < 0) {
+        TwoPathes twoPathes;
+        twoPathes.second.points = this->points;
+        return twoPathes;
+    }
+    
+    ThreePoints threePoints = Point::divide(
+        this->points[segmentUnderKnife],
+        this->points[segmentUnderKnife + 1],
+        segmentT);
+    
+    TwoPathes twoPathes;
+    twoPathes.first.points.resize(segmentUnderKnife + 2);
+    for(int i = 0; i < segmentUnderKnife; i++) {
+        twoPathes.first.points[i] = this->points[i];
+    }
+    twoPathes.first.points[segmentUnderKnife] = threePoints.A;
+    twoPathes.first.points[segmentUnderKnife + 1] = threePoints.B;
+    
+    twoPathes.second.points.resize(this->points.size() - segmentUnderKnife);
+    int secondOffset = segmentUnderKnife + 1;
+    for(int i = secondOffset; i < this->points.size(); i++) {
+        twoPathes.second.points[i - secondOffset + 1] = this->points[i];
+    }
+    twoPathes.second.points[0] = threePoints.B;
+    twoPathes.second.points[1] = threePoints.C;
+    
+    return twoPathes;
+}
+
+std::vector<Path> Path::dash(float dashLength, float gapLength, float offset) {
+    std::vector<Path> pathes;
+    Path currentPath = *this;
+    for(int i = 0; i < 10; i++) {
+        float len = currentPath.length();
+        TwoPathes twoPathes = currentPath.divide(dashLength / len);
+        pathes.push_back(twoPathes.first);
+        float secondPathLen = twoPathes.second.length();
+        currentPath = twoPathes.second.divide(gapLength / secondPathLen).second;
+    }
+    return pathes;
 }
 
 Path tube::Path::copy() {
@@ -589,6 +644,15 @@ Builder tube::Builder::toPoly() {
     builder.pathes.resize(this->pathes.size());
     for (int i = 0; i < this->pathes.size(); i++)
         builder.pathes[i] = this->pathes[i].toPoly();
+    return builder;
+}
+
+Builder Builder::dash(float dashLength, float gapLength, float offset) {
+    auto builder = Builder(this->shape);
+    for (int i = 0; i < this->pathes.size(); i++) {
+        std::vector<Path> dashPathes = this->pathes[i].dash(dashLength, gapLength, offset);
+        builder.pathes.insert(builder.pathes.end(), dashPathes.begin(), dashPathes.end());
+    }
     return builder;
 }
 
