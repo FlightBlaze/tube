@@ -218,9 +218,11 @@ TwoPathes tube::Path::divide(float t)
 std::vector<Path> Path::dash(float dashLength, float gapLength, float offset) {
     std::vector<Path> pathes;
     Path currentPath = *this;
-    for(int i = 0; i < 10; i++) {
+    while(true) {
         float len = currentPath.length();
         TwoPathes twoPathes = currentPath.divide(dashLength / len);
+        if(twoPathes.first.points.size() < 2)
+            break;
         pathes.push_back(twoPathes.first);
         float secondPathLen = twoPathes.second.length();
         currentPath = twoPathes.second.divide(gapLength / secondPathLen).second;
