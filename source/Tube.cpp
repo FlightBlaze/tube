@@ -168,18 +168,16 @@ Tube::Tube(std::vector<Tube> tubes) {
 		return;
 	this->mShapeNumVerts = tubes[0].mShapeNumVerts;
 	size_t indicesEnd = 0;
+    size_t verticesEnd = 0;
 	for (auto& tube : tubes) {
-//        for (auto& vertex : tube.vertices)
-//            this->vertices.push_back(vertex);
-//        for (size_t i = 0; i < tube.indices.size(); i++)
-//            this->indices.push_back((int)indicesEnd + tube.indices[i]);
 		this->vertices.insert(this->vertices.end(), tube.vertices.begin(), tube.vertices.end());
 		this->normals.insert(this->normals.end(), tube.normals.begin(), tube.normals.end());
 		this->texCoords.insert(this->texCoords.end(), tube.texCoords.begin(), tube.texCoords.end());
 		this->indices.resize(this->indices.size() + tube.indices.size());
 		for (size_t i = 0; i < tube.indices.size(); i++)
-			this->indices[indicesEnd + i] = (int)indicesEnd + tube.indices[i];
+			this->indices[indicesEnd + i] = (int)verticesEnd + tube.indices[i];
 		indicesEnd += tube.indices.size();
+        verticesEnd += tube.vertices.size();
 	}
 }
 
@@ -305,13 +303,14 @@ Tube Tube::calculateNormals() {
 
 Tube Tube::join(Tube a, Tube& b) {
 	size_t indicesEnd = a.indices.size();
+    size_t verticesEnd = a.vertices.size();
 	a.mShapeNumVerts = b.mShapeNumVerts;
 	a.vertices.insert(a.vertices.end(), b.vertices.begin(), b.vertices.end());
 	a.normals.insert(a.normals.end(), b.normals.begin(), b.normals.end());
 	a.texCoords.insert(a.texCoords.end(), b.texCoords.begin(), b.texCoords.end());
 	a.indices.resize(a.indices.size() + b.indices.size());
 	for (size_t i = 0; i < b.indices.size(); i++)
-		a.indices[indicesEnd + i] = (int)indicesEnd + b.indices[i];
+		a.indices[indicesEnd + i] = (int)verticesEnd + b.indices[i];
 	return a;
 }
 
